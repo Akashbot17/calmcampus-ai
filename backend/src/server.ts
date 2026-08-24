@@ -3,6 +3,7 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import path from "path";
 
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/user";
@@ -59,7 +60,15 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/decks", flashcardRoutes);
 app.use("/api/security", securityRoutes);
 
-app.use(notFoundHandler);
+const frontendDist = path.join(__dirname, "..", "..", "frontend", "dist");
+app.use(express.static(frontendDist));
+app.get(/^\/(?!api).*/, (_req, res, next) => {
+  res.sendFile(path.join(frontendDist, "index.html"), (err) => {
+    if (err) next();
+  });
+});
+
+app.use("/api", notFoundHandler);
 app.use(errorHandler);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
