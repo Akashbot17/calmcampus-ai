@@ -1,0 +1,101 @@
+// CalmCampus AI - Prisma schema
+// Using SQLite for zero-config local development.
+// To use Postgres instead: set provider = "postgresql" and DATABASE_URL to a postgres connection string.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  passwordHash   String
+  course         String?
+  year           String?
+  studyPreferences String?
+  onboarded      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  conversations  Conversation[]
+  moodEntries    MoodEntry[]
+  studyTasks     StudyTask[]
+  flashcardDecks FlashcardDeck[]
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String   @default("New conversation")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String   // "user" | "assistant"
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+}
+
+model MoodEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  mood      String   // calm | okay | neutral | stressed | overwhelmed
+  note      String?
+  createdAt DateTime @default(now())
+
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model StudyTask {
+  id         String   @id @default(cuid())
+  userId     String
+  subject    String
+  task       String
+  examDate   DateTime?
+  priority   String   @default("Medium") // Low | Medium | High
+  estimatedHours Float?
+  completed  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FlashcardDeck {
+  id        String   @id @default(cuid())
+  userId    String
+  subject   String
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards     Flashcard[]
+}
+
+model Flashcard {
+  id           String   @id @default(cuid())
+  deckId       String
+  front        String
+  back         String
+  // Simple Leitner-style box (1 = review often ... 5 = well known).
+  box          Int      @default(1)
+  lastReviewed DateTime?
+  createdAt    DateTime @default(now())
+
+  deck         FlashcardDeck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+}
